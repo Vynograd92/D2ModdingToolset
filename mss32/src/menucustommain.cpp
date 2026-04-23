@@ -36,6 +36,23 @@
 
 namespace hooks {
 
+bool hasControl(game::CDialogInterf* dialog, const char* name)
+{
+    using namespace game;
+
+    if (!dialog || !dialog->data)
+        return false;
+
+    auto& tree = dialog->data->childControls;
+
+    for (auto it = tree.begin(); it != tree.end(); ++it) {
+        if (strcmp(it->first, name) == 0)
+            return true;
+    }
+
+    return false;
+}
+
 CMenuCustomMain::CMenuCustomMain(game::CMenuPhase* menuPhase)
     : CMenuCustomBase{this}
     , m_peerCallback{this}
@@ -66,6 +83,58 @@ CMenuCustomMain::CMenuCustomMain(game::CMenuPhase* menuPhase)
 
     // Since original button does not work anyway, this is the ideal spot
     setButtonCallback(dialog, "BTN_TUTORIAL", tutorialBtnHandler, this);
+
+    if (hasControl(dialog, "BTN_LINK_1")) {
+        auto button = CDialogInterfApi::get().findButton(dialog, "BTN_LINK_1");
+        if (button)
+            setButtonCallback(button, link1BtnHandler, this);
+    }
+    if (hasControl(dialog, "BTN_LINK_2")) {
+        auto button = CDialogInterfApi::get().findButton(dialog, "BTN_LINK_2");
+        if (button)
+            setButtonCallback(button, link2BtnHandler, this);
+    }
+
+    if (hasControl(dialog, "BTN_LINK_3")) {
+        auto button = CDialogInterfApi::get().findButton(dialog, "BTN_LINK_3");
+        if (button)
+            setButtonCallback(button, link3BtnHandler, this);
+    }
+}
+void __fastcall CMenuCustomMain::link1BtnHandler(CMenuCustomMain* thisptr, int /*%edx*/)
+{
+    using namespace game;
+
+    auto url = textIds().lobby.link1;
+    if (url.empty())
+        url = "https://example.com/link1";
+
+    spdlog::debug("BTN_LINK_1 pressed");
+    openInBrowser(url);
+}
+
+void __fastcall CMenuCustomMain::link2BtnHandler(CMenuCustomMain* thisptr, int /*%edx*/)
+{
+    using namespace game;
+
+    auto url = textIds().lobby.link2;
+    if (url.empty())
+        url = "https://example.com/link2";
+
+    spdlog::debug("BTN_LINK_2 pressed");
+    openInBrowser(url);
+}
+
+void __fastcall CMenuCustomMain::link3BtnHandler(CMenuCustomMain* thisptr, int /*%edx*/)
+{
+    using namespace game;
+
+    auto url = textIds().lobby.link3;
+    if (url.empty())
+        url = "https://example.com/link3";
+
+    spdlog::debug("BTN_LINK_3 pressed");
+    openInBrowser(url);
 }
 
 CMenuCustomMain ::~CMenuCustomMain()

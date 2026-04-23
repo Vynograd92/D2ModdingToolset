@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <windows.h>
 #include "interfaceutils.h"
 #include "attackclasscat.h"
 #include "attacksourcecat.h"
@@ -467,6 +468,28 @@ void setButtonCallback(game::CDialogInterf* dialog,
     SmartPointerApi::get().createOrFreeNoDtor(&functor, nullptr);
 }
 
+void setButtonCallbackSafe(game::CDialogInterf* dialog,
+                           const char* buttonName,
+                           void* callback,
+                           void* callbackParam)
+{
+    using namespace game;
+
+    auto button = CDialogInterfApi::get().findButton(dialog, buttonName);
+    if (!button) {
+        return;
+    }
+
+    SmartPointer functor;
+    CMenuBaseApi::get().createButtonFunctor(&functor, 0, (CMenuBase*)callbackParam,
+                                            (game::CMenuBaseApi::Api::ButtonCallback*)&callback);
+
+    // ÂÀÆÍÎ: ÍÅ èñïîëüçóåì assignFunctor
+    button->vftable->setOnClickedFunctor(button, &functor);
+
+    SmartPointerApi::get().createOrFreeNoDtor(&functor, nullptr);
+}
+
 void setButtonCallback(game::CButtonInterf* button, void* callback, void* callbackParam)
 {
     using namespace game;
@@ -521,6 +544,24 @@ void setEditBoxText(game::CDialogInterf* dialog,
             editBoxApi.resetCursorBlink(editBox->data->editBoxFocus.data);
             editBoxApi.update(editBox);
         }
+    }
+}
+
+void openInBrowser(const std::string& url)
+{
+    if (url.empty())
+        return;
+
+    std::string command = "cmd /c start \"\" \"" + url + "\"";
+
+    STARTUPINFOA si{};
+    PROCESS_INFORMATION pi{};
+    si.cb = sizeof(si);
+
+    if (CreateProcessA(nullptr, command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr,
+                       nullptr, &si, &pi)) {
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
     }
 }
 

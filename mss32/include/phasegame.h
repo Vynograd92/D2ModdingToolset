@@ -87,6 +87,10 @@ struct Api
                                                const CMqPoint* startPosition,
                                                const CMqPoint* endPosition);
     SendStackMoveMsg sendStackMoveMsg;
+
+    using SendCSaveGameMsg = void(__thiscall*)(CPhaseGame* thisptr, char*, bool);
+
+    SendCSaveGameMsg sendCSaveGameMsg;
 };
 
 Api& get();

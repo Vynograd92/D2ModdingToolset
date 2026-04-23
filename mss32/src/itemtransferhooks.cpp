@@ -54,6 +54,7 @@
 #include <spdlog/spdlog.h>
 #include <vector>
 #include <windows.h>
+#include <middragdropinterfhooks.h>
 
 namespace hooks {
 
@@ -1025,6 +1026,195 @@ void __fastcall cityInterfTransferValuablesToCity(game::CCityStackInterf* thispt
                         isValuable);
 }
 
+
+
+
+void __fastcall cityDisbandStack(game::CCityStackInterf* thisptr, int)
+{
+    using namespace game;
+
+    spdlog::info("[CITY_DISBAND] =====================================");
+    spdlog::info("[CITY_DISBAND] START");
+
+    auto* phase = thisptr->dragDropInterf.phaseGame;
+    if (!phase) {
+        spdlog::error("[CITY_DISBAND] Phase is null");
+        return;
+    }
+
+    auto* map = CPhaseApi::get().getDataCache(&phase->phase);
+    if (!map) {
+        spdlog::error("[CITY_DISBAND] Map is null");
+        return;
+    }
+
+    auto* city = static_cast<CFortification*>(
+        map->vftable->findScenarioObjectById(map, &thisptr->data->fortificationId));
+
+    if (!city) {
+        spdlog::error("[CITY_DISBAND] City not found");
+        return;
+    }
+
+    if (city->stackId == emptyId) {
+        spdlog::warn("[CITY_DISBAND] City has no stack");
+        return;
+    }
+
+    CMidgardID stackId = city->stackId;
+
+    spdlog::info("[CITY_DISBAND] StackId: {}", idToString(&stackId));
+
+    auto* stackObj = map->vftable->findScenarioObjectById(map, &stackId);
+
+    if (!stackObj) {
+        spdlog::error("[CITY_DISBAND] Stack object not found");
+        return;
+    }
+
+    auto* stack = static_cast<CMidStack*>(stackObj);
+
+    CMidgardID leaderId = stack->leaderId;
+
+    spdlog::info("[CITY_DISBAND] LeaderId: {}", idToString(&leaderId));
+    spdlog::info("[CITY_DISBAND] OwnerId: {}", idToString(&stack->ownerId));
+    spdlog::info("[CITY_DISBAND] LeaderAlive: {}", stack->leaderAlive);
+
+    const auto& groupApi = CMidUnitGroupApi::get();
+    const auto& net = NetMessagesApi::get();
+
+    int count = groupApi.getUnitsCount(&stack->group);
+
+    spdlog::info("[CITY_DISBAND] UnitsCount: {}", count);
+
+    std::vector<CMidgardID> units;
+    units.reserve(count);
+
+    for (int i = 0; i < count; ++i) {
+        spdlog::info("[CITY_DISBAND] ---- SLOT {} ----", i);
+
+        CMidgardID* unitPtr = groupApi.getUnitId(&stack->group, i);
+
+        if (!unitPtr) {
+            spdlog::warn("[CITY_DISBAND] SLOT {}: NULL pointer", i);
+            continue;
+        }
+
+        spdlog::info("[CITY_DISBAND] SLOT {} raw: {}", i, idToString(unitPtr));
+
+        if (*unitPtr == emptyId) {
+            spdlog::warn("[CITY_DISBAND] SLOT {} emptyId", i);
+            continue;
+        }
+
+        units.push_back(*unitPtr);
+    }
+
+    spdlog::info("[CITY_DISBAND] Removing non-leader units");
+
+    for (auto& unit : units) {
+        if (unit == leaderId) {
+            spdlog::info("[CITY_DISBAND] Skipping leader in unit loop");
+            continue;
+        }
+
+        spdlog::info("[CITY_DISBAND] Sending DismissUnit (unit={}, stack={})", idToString(&unit),
+                     idToString(&stackId));
+
+        net.sendStackDismissUnitMsg(phase, &unit, &stackId);
+    }
+
+    spdlog::info("[CITY_DISBAND] Removing leader via dedicated message");
+
+    net.sendStackDismissLeaderMsg(phase, &stackId);
+
+    spdlog::info("[CITY_DISBAND] END");
+    spdlog::info("[CITY_DISBAND] =====================================");
+}
+
+
+void __fastcall pickupForceRemoveStack(game::CPickUpDropInterf* thisptr, int)
+{
+    using namespace game;
+
+    spdlog::info("[PICKUP_FORCE_APPLY] =====================================");
+    spdlog::info("[PICKUP_FORCE_APPLY] START");
+
+    if (!thisptr)
+        return;
+
+    auto* phase = thisptr->dragDropInterf.phaseGame;
+    if (!phase)
+        return;
+
+    auto* objectMap = CPhaseApi::get().getDataCache(&phase->phase);
+    if (!objectMap)
+        return;
+
+    CMidgardID stackId = thisptr->data->stackId;
+    if (stackId == emptyId)
+        return;
+
+    auto* stackObj = objectMap->vftable->findScenarioObjectById(objectMap, &stackId);
+
+    if (!stackObj)
+        return;
+
+    auto* stack = static_cast<CMidStack*>(stackObj);
+
+    const auto& groupApi = CMidUnitGroupApi::get();
+
+    // === Адреса из IDA ===
+    constexpr uintptr_t CtorAddr = 0x00613873; // CVisitorRmvUnitFromGroupCtor
+    //constexpr uintptr_t DtorAddr = 0xYYYYYYYY; // CScenarioVisitor::~CScenarioVisitor
+
+    using CtorFn = void(__thiscall*)(void*, CMidgardID*, CMidgardID*, char, char,
+                                     IMidgardObjectMap*);
+
+    using DtorFn = void(__thiscall*)(void*);
+    using ApplyFn = bool(__thiscall*)(void*);
+
+    CtorFn ctor = reinterpret_cast<CtorFn>(CtorAddr);
+    //DtorFn dtor = reinterpret_cast<DtorFn>(DtorAddr);
+
+    while (groupApi.getUnitsCount(&stack->group) > 0) {
+        CMidgardID* unitId = groupApi.getUnitId(&stack->group, 0);
+
+        if (!unitId || *unitId == emptyId)
+            break;
+
+        spdlog::info("[PICKUP_FORCE_APPLY] Removing unit {}", idToString(unitId));
+
+        // visitor занимает 0x20 байт
+        DWORD visitor[8] = {};
+
+        // 1️⃣ Конструктор
+        ctor(visitor, unitId, &stackId, 0, 1, objectMap);
+
+        // 2️⃣ Получаем apply из vtable
+        DWORD* vtable = *(DWORD**)visitor;
+        ApplyFn apply = reinterpret_cast<ApplyFn>(vtable[2]); // index 2 = apply
+
+        // 3️⃣ Вызов apply напрямую
+        bool result = apply(visitor);
+
+        spdlog::info("[PICKUP_FORCE_APPLY] apply result = {}", result);
+
+        // 4️⃣ Деструктор
+        //dtor(visitor);
+
+        if (!result) {
+            spdlog::error("[PICKUP_FORCE_APPLY] apply failed");
+            break;
+        }
+    }
+
+    midDragDropInterfResetCurrentSource(&thisptr->dragDropInterf);
+
+    spdlog::info("[PICKUP_FORCE_APPLY] END");
+    spdlog::info("[PICKUP_FORCE_APPLY] =====================================");
+}
+
 static void setupCityStackButtons(game::CCityStackInterf* thisptr, game::CDialogInterf* dialog)
 {
     using namespace game;
@@ -1057,10 +1247,13 @@ static void setupCityStackButtons(game::CCityStackInterf* thisptr, game::CDialog
     hook("BTN_TRANSF_L_VALUABLES", (CB::Callback)cityInterfTransferValuablesToStack);
     hook("BTN_TRANSF_R_VALUABLES", (CB::Callback)cityInterfTransferValuablesToCity);
     hook("BTN_TRANSF_R_CITY_CAPITAL", (CB::Callback)cityTransferBtn);
+    hook("BTN_DISBAND_STACK", (CB::Callback)cityDisbandStack);
 
     // --- Sor buttons ---
     setupCitySortButtons(api, btn, dlg, thisptr, dialog, fun, cb, free, name);
 }
+
+
 
 game::CCityStackInterf* __fastcall cityStackInterfCtorHooked(game::CCityStackInterf* thisptr,
                                                              int /*%edx*/,
@@ -1287,6 +1480,87 @@ void __fastcall pickupTransferValuablesToBag(game::CPickUpDropInterf* thisptr, i
                        &thisptr->data->bagId, isValuable);
 }
 
+
+void __fastcall pickupDisbandStack(game::CPickUpDropInterf* thisptr, int)
+{
+    using namespace game;
+
+    spdlog::info("[PICKUP_DISBAND] =====================================");
+    spdlog::info("[PICKUP_DISBAND] START");
+
+    if (!thisptr) {
+        spdlog::error("[PICKUP_DISBAND] thisptr null");
+        return;
+    }
+
+    auto* phase = thisptr->dragDropInterf.phaseGame;
+    if (!phase) {
+        spdlog::error("[PICKUP_DISBAND] Phase null");
+        return;
+    }
+
+    auto* map = CPhaseApi::get().getDataCache(&phase->phase);
+    if (!map) {
+        spdlog::error("[PICKUP_DISBAND] Map null");
+        return;
+    }
+
+    CMidgardID stackId = thisptr->data->stackId;
+
+    if (stackId == emptyId) {
+        spdlog::warn("[PICKUP_DISBAND] stackId empty");
+        return;
+    }
+
+    spdlog::info("[PICKUP_DISBAND] StackId: {}", idToString(&stackId));
+
+    auto* stackObj = map->vftable->findScenarioObjectById(map, &stackId);
+    if (!stackObj) {
+        spdlog::error("[PICKUP_DISBAND] Stack not found");
+        return;
+    }
+
+    auto* stack = static_cast<CMidStack*>(stackObj);
+
+    CMidgardID leaderId = stack->leaderId;
+
+    spdlog::info("[PICKUP_DISBAND] LeaderId: {}", idToString(&leaderId));
+
+    const auto& groupApi = CMidUnitGroupApi::get();
+    const auto& net = NetMessagesApi::get();
+
+    int count = groupApi.getUnitsCount(&stack->group);
+
+    std::vector<CMidgardID> units;
+    units.reserve(count);
+
+    for (int i = 0; i < count; ++i) {
+        CMidgardID* unitPtr = groupApi.getUnitId(&stack->group, i);
+        if (!unitPtr || *unitPtr == emptyId)
+            continue;
+
+        units.push_back(*unitPtr);
+    }
+
+    // Удаляем всех кроме лидера
+    for (auto& unit : units) {
+        if (unit == leaderId)
+            continue;
+
+        spdlog::info("[PICKUP_DISBAND] Dismiss unit {}", idToString(&unit));
+        net.sendStackDismissUnitMsg(phase, &unit, &stackId);
+    }
+
+    // Удаляем лидера
+    if (leaderId != emptyId) {
+        spdlog::info("[PICKUP_DISBAND] Dismiss leader {}", idToString(&leaderId));
+        net.sendStackDismissLeaderMsg(phase, &stackId);
+    }
+
+    spdlog::info("[PICKUP_DISBAND] END");
+    spdlog::info("[PICKUP_DISBAND] =====================================");
+}
+
 static void setupPickupButtons(game::CPickUpDropInterf* thisptr, game::CDialogInterf* dialog)
 {
     using namespace game;
@@ -1319,6 +1593,7 @@ static void setupPickupButtons(game::CPickUpDropInterf* thisptr, game::CDialogIn
     hook("BTN_TRANSF_R_SPELLS", (Callback)pickupTransferSpellsToBag);
     hook("BTN_TRANSF_L_VALUABLES", (Callback)pickupTransferValuablesToStack);
     hook("BTN_TRANSF_R_VALUABLES", (Callback)pickupTransferValuablesToBag);
+    hook("BTN_DISBAND_STACK", (Callback)pickupForceRemoveStack);
 
     // --- SORT buttons ---
     setupPickupSortButtons(api, btn, dlg, thisptr, dialog, fun, cb, free, name);

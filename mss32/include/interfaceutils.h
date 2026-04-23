@@ -86,6 +86,10 @@ void setButtonCallback(game::CDialogInterf* dialog,
                        const char* buttonName,
                        void* callback,
                        void* callbackParam);
+void setButtonCallbackSafe(game::CDialogInterf* dialog,
+                           const char* buttonName,
+                           void* callback,
+                           void* callbackParam);
 void setButtonCallback(game::CButtonInterf* button, void* callback, void* callbackParam);
 void setEditBoxData(game::CDialogInterf* dialog,
                     const char* editName,
@@ -97,6 +101,7 @@ void setEditBoxText(game::CDialogInterf* dialog,
                     const char* editName,
                     const char* text,
                     bool moveCursorPos);
+void openInBrowser(const std::string& url);
 
 } // namespace hooks
 

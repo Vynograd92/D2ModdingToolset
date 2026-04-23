@@ -50,6 +50,7 @@ public:
     static constexpr char roomPasswordDialogName[] = "DLG_ROOM_PASSWORD";
     static constexpr char transitionFromMainName[] = "TRANS_MAIN2CUSTOMLOBBY";
     static constexpr char transitionFromBlackName[] = "TRANS_BLACK2CUSTOMLOBBY";
+    static constexpr char helpDialogName[] = "DLG_CUSTOM_HELP";
     static constexpr std::uint32_t roomsUpdateEventInterval{5000};
     static constexpr std::uint32_t usersUpdateEventInterval{5000};
     static constexpr std::uint32_t chatMessageMaxLength{40};
@@ -66,7 +67,6 @@ protected:
     static int __fastcall handleKeyboard(CMenuCustomLobby* thisptr, int /*%edx*/, int key, int a3);
 
     struct RoomInfo;
-
     void initializeNetMsgEntries();
     void initializeChatControls();
     void initializeUserControls();
@@ -128,6 +128,7 @@ protected:
     static void __fastcall joinBtnHandler(CMenuCustomLobby* thisptr, int /*%edx*/);
     static void __fastcall backBtnHandler(CMenuCustomLobby* thisptr, int /*%edx*/);
     static void __fastcall sendBtnHandler(CMenuCustomLobby* thisptr, int /*%edx*/);
+    static void __fastcall helpBtnHandler(CMenuCustomLobby* thisptr, int /*%edx*/);
     static void __fastcall roomsUpdateEventCallback(CMenuCustomLobby* thisptr, int /*%edx*/);
     static void __fastcall usersUpdateEventCallback(CMenuCustomLobby* thisptr, int /*%edx*/);
     static void __fastcall chatMessageRegenEventCallback(CMenuCustomLobby* thisptr, int /*%edx*/);
@@ -250,7 +251,31 @@ protected:
     };
     assert_offset(CRoomPasswordInterf, vftable, 0);
 
+    struct CHelpInterf
+        : public game::CPopupDialogInterf
+        , public CPopupDialogCustomBase
+    {
+        CHelpInterf(CMenuCustomLobby* menu);
+
+    protected:
+        static void __fastcall closeBtnHandler(CHelpInterf* thisptr, int /*%edx*/);
+        static void __fastcall listBoxDisplayHandler(CHelpInterf* thisptr,
+                                                     int /*%edx*/,
+                                                     game::ImagePointList* contents,
+                                                     const game::CMqRect* lineArea,
+                                                     int index,
+                                                     bool selected);
+        static void __fastcall listBoxClickHandler(CHelpInterf* thisptr,
+                                                   int /*edx*/,
+                                                   int selectedIndex);
+
+    private:
+        CMenuCustomLobby* m_menu;
+    };
+    assert_offset(CHelpInterf, vftable, 0);
+
 private:
+    CHelpInterf* m_helpDialog{};
     PeerCallback m_peerCallback;
     RoomsCallback m_roomsCallback;
     game::UiEvent m_roomsUpdateEvent;

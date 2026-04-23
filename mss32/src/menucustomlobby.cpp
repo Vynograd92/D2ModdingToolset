@@ -49,8 +49,25 @@
 #include "uimanager.h"
 #include "utils.h"
 #include <spdlog/spdlog.h>
+#include <unitutils.h>
 
 namespace hooks {
+
+inline void copyToClipboard(const std::string& text)
+{
+    if (OpenClipboard(nullptr)) {
+        EmptyClipboard();
+        HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, text.size() + 1);
+        if (hMem) {
+            memcpy(GlobalLock(hMem), text.c_str(), text.size() + 1);
+            GlobalUnlock(hMem);
+            SetClipboardData(CF_TEXT, hMem);
+        }
+        CloseClipboard();
+    }
+}
+
+
 
 CMenuCustomLobby::CMenuCustomLobby(game::CMenuPhase* menuPhase)
     : CMenuCustomBase(this)
@@ -193,7 +210,7 @@ void CMenuCustomLobby::initializeChatControls()
         // Request saved chat messages
         CNetCustomService::get()->queryChatMessages();
     }
-
+    //
     auto editBoxChat = (CEditBoxInterf*)findOptionalControl("EDIT_CHAT", rtti.CEditBoxInterfType);
     if (editBoxChat) {
         editBoxApi.setInputLength(editBoxChat, chatMessageMaxLength);
@@ -330,6 +347,13 @@ void CMenuCustomLobby::initializeRoomsControls()
         setButtonCallback(btnCreate, createBtnHandler, this);
     }
 
+    auto btnHelp = (CButtonInterf*)findOptionalControl("BTN_HELP", rtti.CButtonInterfType);
+
+    if (btnHelp) {
+        setButtonCallback(btnHelp, helpBtnHandler, this);
+    }
+
+
     auto btnLoad = (CButtonInterf*)findOptionalControl("BTN_LOAD", rtti.CButtonInterfType);
     if (btnLoad) {
         setButtonCallback(btnLoad, loadBtnHandler, this);
@@ -394,6 +418,46 @@ void CMenuCustomLobby::hideRoomPasswordDialog()
     }
 }
 
+void __fastcall CMenuCustomLobby::helpBtnHandler(CMenuCustomLobby* thisptr, int /*%edx*/)
+{
+    using namespace game;
+
+    spdlog::debug("HELP Button pressed");
+
+    if (thisptr->m_helpDialog) {
+        spdlog::debug("HELP Dialog already opened, ignoring");
+        return;
+    }
+
+    spdlog::debug("HELP Allocating help dialog");
+
+    thisptr->m_helpDialog = (CHelpInterf*)Memory::get().allocate(sizeof(CHelpInterf));
+
+    spdlog::debug("HELP Showing help dialog");
+
+    showInterface(new (thisptr->m_helpDialog) CHelpInterf(thisptr));
+}
+
+
+void __fastcall CMenuCustomLobby::CHelpInterf::closeBtnHandler(CHelpInterf* thisptr, int /*%edx*/)
+{
+    spdlog::debug("HELP Close button pressed");
+
+    auto menu = thisptr->m_menu;
+
+    spdlog::debug("HELP Hiding help interface");
+
+    hideInterface(thisptr);
+
+    spdlog::debug("HELP Calling destructor");
+
+    thisptr->vftable->destructor(thisptr, 1);
+
+    menu->m_helpDialog = nullptr;
+
+    spdlog::debug("HELP Help dialog destroyed and pointer cleared");
+}
+
 void __fastcall CMenuCustomLobby::createBtnHandler(CMenuCustomLobby* thisptr, int /*%edx*/)
 {
     using namespace game;
@@ -411,6 +475,200 @@ void __fastcall CMenuCustomLobby::loadBtnHandler(CMenuCustomLobby* thisptr, int 
     menuPhase->data->host = true;
     CMenuPhaseApi::get().switchPhase(menuPhase, MenuTransition::CustomLobby2LoadSkirmish);
 }
+
+void __fastcall CMenuCustomLobby::CHelpInterf::listBoxClickHandler(CHelpInterf* thisptr,
+                                                                   int,
+                                                                   int index)
+{
+    const auto& helpEntries = hooks::textIds().lobby.help;
+
+    if (index < 0 || index >= (int)helpEntries.size())
+        return;
+
+    const auto& entry = helpEntries[index];
+    const std::string& link = entry.url;
+
+    if (link.empty())
+        return;
+
+    bool ctrl = (GetAsyncKeyState(VK_CONTROL) & 0x8000);
+    bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000);
+
+    if (ctrl) {
+        copyToClipboard(link);
+        spdlog::debug("HELP Copied URL: {}", link);
+    } else if (shift) {
+
+        HWND hwnd = GetForegroundWindow();
+        if (hwnd && IsWindow(hwnd)) {
+            ShowWindow(hwnd, SW_MINIMIZE);
+        }
+
+        openInBrowser(link);
+        spdlog::debug("HELP Opened URL: {}", link);
+    }
+}
+
+
+void __fastcall CMenuCustomLobby::CHelpInterf::listBoxDisplayHandler(CHelpInterf* thisptr,
+                                                                     int,
+                                                                     game::ImagePointList* contents,
+                                                                     const game::CMqRect* lineArea,
+                                                                     int index,
+                                                                     bool selected)
+{
+    using namespace game;
+
+    const auto& helpEntries = hooks::textIds().lobby.help;
+
+    if (index < 0 || index >= (int)helpEntries.size())
+        return;
+
+    const auto& entry = helpEntries[index];
+    const std::string& title = entry.title;
+
+    const int rowHeight = 24;
+    CMqPoint size{lineArea->right - lineArea->left, rowHeight};
+
+    auto image2Text = (CImage2Text*)Memory::get().allocate(sizeof(CImage2Text));
+
+    CImage2TextApi::get().constructor(image2Text, size.x, size.y);
+
+    CImage2TextApi::get().setText(image2Text, fmt::format("\\fSmall;{}", title).c_str());
+
+    ImagePtrPointPair pair{};
+    SmartPointerApi::get().createOrFree((SmartPointer*)&pair.first, image2Text);
+
+    pair.second.x = 0;
+    pair.second.y = 0;
+
+    ImagePointListApi::get().add(contents, &pair);
+
+    SmartPointerApi::get().createOrFree((SmartPointer*)&pair.first, nullptr);
+
+    // Outline 
+    if (selected) {
+
+        game::Color color{};
+        CMqPoint outlineSize{lineArea->right - lineArea->left, rowHeight};
+
+        auto outline = (CImage2Outline*)Memory::get().allocate(sizeof(CImage2Outline));
+
+        CImage2OutlineApi::get().constructor(outline, &outlineSize, &color, 0xff);
+
+        ImagePtrPointPair outlinePair{};
+        SmartPointerApi::get().createOrFree((SmartPointer*)&outlinePair.first, outline);
+
+        outlinePair.second.x = 0;
+        outlinePair.second.y = 0;
+
+        ImagePointListApi::get().add(contents, &outlinePair);
+
+        SmartPointerApi::get().createOrFree((SmartPointer*)&outlinePair.first, nullptr);
+    }
+}
+
+
+
+CMenuCustomLobby::CHelpInterf::CHelpInterf(CMenuCustomLobby* menu)
+    : CPopupDialogCustomBase(this, helpDialogName)
+    , m_menu(menu)
+{
+    using namespace game;
+
+    spdlog::debug("HELP Constructing HelpInterf");
+
+    CPopupDialogInterfApi::get().constructor(this, helpDialogName, nullptr);
+
+    setButtonCallback(*dialog, "BTN_CLOSE", closeBtnHandler, this);
+
+    const auto& dialogApi = CDialogInterfApi::get();
+    const auto& pictureApi = CPictureInterfApi::get();
+    const auto& listBoxApi = CListBoxInterfApi::get();
+    const auto& menuBaseApi = CMenuBaseApi::get();
+
+    // ===== Portrait
+    auto img = dialogApi.findPicture(*dialog, "IMG_PLAYER_RBIGFACE");
+    if (img) {
+        const auto& fn = gameFunctions();
+        const auto& idApi = CMidgardIDApi::get();
+
+        CMidgardID unitId{};
+        idApi.fromString(&unitId, "G001UU7582");
+
+        if (unitId.value == 0x3f0000) {
+            spdlog::warn("Invalid id string, using fallback");
+            idApi.fromString(&unitId, "G000UU0152");
+        }
+
+        auto* impl = hooks::getGlobalUnitImpl(&unitId);
+
+        if (!impl) {
+            spdlog::warn("Unit impl not found, fallback");
+
+            idApi.fromString(&unitId, "G000UU0152");
+            impl = hooks::getGlobalUnitImpl(&unitId);
+
+            if (!impl) {
+                spdlog::error("Fallback impl also not found");
+                return;
+            }
+        }
+
+        auto faceImage = fn.createUnitFaceImage(&unitId, true);
+
+        if (!faceImage) {
+            spdlog::error("createUnitFaceImage returned nullptr");
+            return;
+        }
+
+        faceImage->vftable->setPercentHp(faceImage, 100);
+        faceImage->vftable->setUnknown68(faceImage, 0);
+        faceImage->vftable->setLeftSide(faceImage, false);
+
+        CMqPoint offset{-4, 0};
+        pictureApi.setImage(img, (IMqImage2*)faceImage, &offset);
+    }
+
+    // ===== Description from Lua
+    auto txtHelp = dialogApi.findTextBox(*dialog, "TXT_HELP_INFO");
+    if (txtHelp) {
+        const auto& helperText = hooks::textIds().lobby.helpDescription;
+        CTextBoxInterfApi::get().setString(txtHelp, helperText.c_str());
+    }
+
+    // ===== ListBox
+    auto listBox = dialogApi.findListBox(*dialog, "LBOX_TEXT_AREA");
+    if (!listBox) {
+        spdlog::error("HELP LBOX_TEXT_AREA not found!");
+        return;
+    }
+
+    // Display callback
+    SmartPointer displayFunctor;
+    auto displayCallback = (CMenuBaseApi::Api::ListBoxDisplayCallback)listBoxDisplayHandler;
+
+    menuBaseApi.createListBoxDisplayFunctor(&displayFunctor, 0, m_menu, &displayCallback);
+
+    listBoxApi.assignDisplaySurfaceFunctor(*dialog, "LBOX_TEXT_AREA", helpDialogName,
+                                           &displayFunctor);
+
+    SmartPointerApi::get().createOrFreeNoDtor(&displayFunctor, nullptr);
+
+    // Click callback
+    SmartPointer clickFunctor;
+    auto clickCallback = (CMenuBaseApi::Api::ListBoxCallback)listBoxClickHandler;
+
+    menuBaseApi.createListBoxFunctor(&clickFunctor, 0, m_menu, &clickCallback);
+
+    listBoxApi.assignFunctor(*dialog, "LBOX_TEXT_AREA", helpDialogName, &clickFunctor);
+
+    SmartPointerApi::get().createOrFreeNoDtor(&clickFunctor, nullptr);
+
+    // set count
+    listBoxApi.setElementsTotal(listBox, (int)hooks::textIds().lobby.help.size());
+}
+
 
 void __fastcall CMenuCustomLobby::joinBtnHandler(CMenuCustomLobby* thisptr, int /*%edx*/)
 {

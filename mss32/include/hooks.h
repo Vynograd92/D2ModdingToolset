@@ -70,6 +70,8 @@ struct CScenarioVisitor;
 struct LSiteCategory;
 struct CMidSite;
 struct CTextBoxInterf;
+struct CMidServerLogic;
+
 
 template <typename T>
 struct CInterfaceT;

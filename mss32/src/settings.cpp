@@ -375,6 +375,7 @@ static void readSettings(const sol::table& table, Settings& settings)
     settings.drainOverflowHeal = readSetting(table, "drainOverflowHeal", defaultSettings().drainOverflowHeal);
     settings.carryOverItemsMax = readSetting(table, "carryOverItemsMax", defaultSettings().carryOverItemsMax, 0);
     settings.criticalHitDamage = readSetting(table, "criticalHitDamage", defaultSettings().criticalHitDamage);
+    settings.autoSaveSlots = readSetting(table,"autoSaveSlots",defaultSettings().autoSaveSlots,0,999);
     settings.criticalHitChance = readSetting(table, "criticalHitChance", defaultSettings().criticalHitChance, (uint8_t)0, (uint8_t)100);
     settings.mageLeaderAttackPowerReduction = readSetting(table, "mageLeaderAccuracyReduction", defaultSettings().mageLeaderAttackPowerReduction);
     settings.disableAllowedRoundMax = readSetting(table, "disableAllowedRoundMax", defaultSettings().disableAllowedRoundMax, (uint8_t)1);
@@ -447,6 +448,7 @@ const Settings& baseSettings()
         settings.drainAttackHeal = 50;
         settings.drainOverflowHeal = 50;
         settings.carryOverItemsMax = 5;
+        settings.autoSaveSlots = 20;
         settings.criticalHitDamage = 5;
         settings.criticalHitChance = 100;
         settings.mageLeaderAttackPowerReduction = 10;

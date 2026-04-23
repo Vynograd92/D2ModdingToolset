@@ -63,6 +63,7 @@
 #include "custombuildingcategories.h"
 #include "customnobleactioncategories.h"
 #include "customnobleactionhooks.h"
+#include "chatinterfhooks.h"
 #include "d2string.h"
 #include "dbfaccess.h"
 #include "dbtable.h"
@@ -229,6 +230,7 @@
 #include <iterator>
 #include <spdlog/spdlog.h>
 #include <string>
+#include "../savegamehooks.h"
 
 namespace hooks {
 
@@ -266,6 +268,8 @@ static Hooks getGameHooks()
         {fn.getAttackClassWardFlagPosition, getAttackClassWardFlagPositionHooked, (void**)&orig.getAttackClassWardFlagPosition},
         // Support custom attack animations?
         {fn.attackClassToString, attackClassToStringHooked, (void**)&orig.attackClassToString},
+        // Add player name and time to chat messages
+        {CChatInterfApi::get().listBoxDisplayHandler, chatInterfListBoxDisplayHooked, (void**)&orig.chatInterfListBoxDisplayHandler},
         // Add items transfer buttons to city interface
         {CCityStackInterfApi::get().constructor, cityStackInterfCtorHooked, (void**)&orig.cityStackInterfCtor},
         // Add items transfer buttons to stack exchange interface
@@ -603,6 +607,13 @@ static Hooks getGameHooks()
                                     (void**)&orig.midServerLogicSendObjectsChanges});
     }
 
+
+    
+    // Registers autosave hook.
+    // Replaces CPhaseGame::SendCSaveGameMsg to extend default autosave behavior
+    // with a rotating autosave ring while preserving original functionality.
+     registerSaveGameHooks(hooks);
+    
     return hooks;
 }
 

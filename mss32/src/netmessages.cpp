@@ -28,17 +28,24 @@ static std::array<Api, 3> functions = {{
     // Akella
     Api{
         (Api::SendStackExchangeItemMsg)0x406fef,
-        (Api::SendSiteSellItemMsg)0x4066d9
+        (Api::SendSiteSellItemMsg)0x4066d9,
+        // Akella
+        (Api::SendStackDismissUnitMsg)0x00406f47,
+        (Api::SendStackDismissLeaderMsg)0x00406E5B
     },
     // Russobit
     Api{
         (Api::SendStackExchangeItemMsg)0x406fef,
-        (Api::SendSiteSellItemMsg)0x4066d9
+        (Api::SendSiteSellItemMsg)0x4066d9,
+        (Api::SendStackDismissUnitMsg)0x00406f47, //test, then delete
+        (Api::SendStackDismissLeaderMsg)0x00406E5B  //test, then delete
     },
     // Gog
     Api{
         (Api::SendStackExchangeItemMsg)0x406c7b,
-        (Api::SendSiteSellItemMsg)0x406365
+        (Api::SendSiteSellItemMsg)0x406365,
+        (Api::SendStackDismissUnitMsg)0x00406f47, //test, then delete
+        (Api::SendStackDismissLeaderMsg)0x00406E5B  //test, then delete
     }
 }};
 // clang-format on

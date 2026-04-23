@@ -21,6 +21,7 @@
 #define TEXTIDS_H
 
 #include <string>
+#include <vector>
 
 namespace hooks {
 
@@ -130,6 +131,18 @@ struct TextIds
         std::string roomsTotal;
         std::string roomInfo;
         std::string roomInfoInList;
+        std::string link1;
+        std::string link2;
+        std::string link3;
+
+        struct HelpEntry
+        {
+            std::string title;
+            std::string url;
+        };
+
+        std::vector<HelpEntry> help;
+        std::string helpDescription;
     } lobby;
 
     struct ScenarioGenerator

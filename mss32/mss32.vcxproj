@@ -243,6 +243,7 @@ call ..\buildDetours.bat ..\Detours
     <ClCompile Include="src\buildingcat.cpp" />
     <ClCompile Include="src\buildingtype.cpp" />
     <ClCompile Include="src\chatinterf.cpp" />
+    <ClCompile Include="src\chatinterfhooks.cpp" />
     <ClCompile Include="src\citystackinterfhooks.cpp" />
     <ClCompile Include="src\cmdmovestackendmsg.cpp" />
     <ClCompile Include="src\customaibattle.cpp" />
@@ -392,6 +393,7 @@ call ..\buildDetours.bat ..\Detours
     <ClCompile Include="src\resourcemarketinterface.cpp" />
     <ClCompile Include="src\resourcetype.cpp" />
     <ClCompile Include="src\resultsender.cpp" />
+    <ClCompile Include="src\savegamehooks.cpp" />
     <ClCompile Include="src\scenarioobjectstreams.cpp" />
     <ClCompile Include="src\scenariotemplates.cpp" />
     <ClCompile Include="src\refreshinfo.cpp" />
@@ -965,6 +967,7 @@ call ..\buildDetours.bat ..\Detours
     <ClInclude Include="include\resourcemarketinterface.h" />
     <ClInclude Include="include\resourcetype.h" />
     <ClInclude Include="include\resultsender.h" />
+    <ClInclude Include="include\savegamehooks.h" />
     <ClInclude Include="include\scenarioobjectstreams.h" />
     <ClInclude Include="include\scenariotemplates.h" />
     <ClInclude Include="include\scenedit.h" />
@@ -1083,7 +1086,7 @@ call ..\buildDetours.bat ..\Detours
     <ClInclude Include="include\itemspecial.h" />
     <ClInclude Include="include\itemspell.h" />
     <ClInclude Include="include\itemtalisman.h" />
-	<ClInclude Include="include\itemtransferhooks.h" />
+    <ClInclude Include="include\itemtransferhooks.h" />
     <ClInclude Include="include\itemtravelitem.h" />
     <ClInclude Include="include\itemutils.h" />
     <ClInclude Include="include\itemvaluable.h" />
@@ -1389,6 +1392,7 @@ call ..\buildDetours.bat ..\Detours
     <ClInclude Include="include\wdb.h" />
     <ClInclude Include="include\widgetinterf.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="src\chatinterfhooks.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="mss32.rc" />

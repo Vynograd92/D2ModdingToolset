@@ -130,6 +130,28 @@ void readLobbyTextIds(const sol::table& table, TextIds::Lobby& value)
     value.roomsTotal = lobby.get_or("roomsTotal", std::string());
     value.roomInfo = lobby.get_or("roomInfo", std::string());
     value.roomInfoInList = lobby.get_or("roomInfoInList", std::string());
+    value.link1= lobby.get_or("link1", std::string());
+    value.link2 = lobby.get_or("link2", std::string());
+    value.link3 = lobby.get_or("link3", std::string());
+    value.helpDescription = lobby.get_or("helpDescription", std::string());
+
+    auto helpTable = lobby.get<sol::optional<sol::table>>("help");
+    if (helpTable.has_value()) {
+
+        for (auto& pair : helpTable.value()) {
+
+            const sol::table& entryTable = pair.second.as<sol::table>();
+
+            TextIds::Lobby::HelpEntry entry;
+
+            entry.title = entryTable.get_or("title", std::string());
+            entry.url = entryTable.get_or("url", std::string());
+
+            if (!entry.title.empty() && !entry.url.empty()) {
+                value.help.push_back(std::move(entry));
+            }
+        }
+    }
 }
 
 void readGeneratorTextIds(const sol::table& table, TextIds::ScenarioGenerator& value)

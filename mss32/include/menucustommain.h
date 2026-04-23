@@ -43,6 +43,9 @@ protected:
     static void __fastcall destructor(CMenuCustomMain* thisptr, int /*%edx*/, char flags);
 
     static void __fastcall tutorialBtnHandler(CMenuCustomMain* thisptr, int /*%edx*/);
+    static void __fastcall link1BtnHandler(CMenuCustomMain* thisptr, int /*%edx*/);
+    static void __fastcall link2BtnHandler(CMenuCustomMain* thisptr, int /*%edx*/);
+    static void __fastcall link3BtnHandler(CMenuCustomMain* thisptr, int /*%edx*/);
 
     void showLoginDialog();
     void hideLoginDialog();

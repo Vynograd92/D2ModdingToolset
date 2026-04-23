@@ -101,12 +101,23 @@ struct Api
                                                   const CMidgardID* stackId,
                                                   const CMidgardID* itemId);
     SendSiteSellItemMsg sendSiteSellItemMsg;
+
+    using SendStackDismissUnitMsg = void(__thiscall*)(game::CPhaseGame* phaseGame,
+                                                      const game::CMidgardID* unitId,
+                                                      const game::CMidgardID* stackId);
+    SendStackDismissUnitMsg sendStackDismissUnitMsg;
+
+    using SendStackDismissLeaderMsg = void(__thiscall*)(CPhaseGame*, const CMidgardID* stackId);
+
+    SendStackDismissLeaderMsg sendStackDismissLeaderMsg;
+
 };
 
 Api& get();
 
 CNetMsgVftable* getMenusReqVersionVftable();
 CNetMsgVftable* getMenusReqInfoVftable();
+
 
 } // namespace NetMessagesApi
 

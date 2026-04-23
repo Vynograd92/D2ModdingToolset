@@ -25,6 +25,7 @@
 #include "battlemsgdata.h"
 #include "batlogic.h"
 #include "citystackinterf.h"
+#include "chatinterf.h"
 #include "commandmsg.h"
 #include "condinterf.h"
 #include "d2osexception.h"
@@ -85,6 +86,8 @@ struct OriginalFunctions
 
     game::CMidgardScenarioMapApi::Api::Stream scenarioMapStream;
 
+    game::CChatInterfApi::Api::ListBoxDisplayHandler chatInterfListBoxDisplayHandler{};
+    game::ILoveChatVftable::Method1 loveChatMethod1;
     game::CCityStackInterfApi::Api::Constructor cityStackInterfCtor;
     game::CExchangeInterfApi::Api::Constructor exchangeInterfCtor;
     game::CPickUpDropInterfApi::Api::Constructor pickupDropInterfCtor;

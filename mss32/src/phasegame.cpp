@@ -29,21 +29,27 @@ static std::array<Api, 4> functions = {{
     Api{
         (Api::CheckObjectLock)0x4078b7,
         (Api::SendStackMoveMsg)0x40650f,
+        (Api::SendCSaveGameMsg)0x40639b,
     },
     // Russobit
     Api{
         (Api::CheckObjectLock)0x4078b7,
         (Api::SendStackMoveMsg)0x40650f,
+        (Api::SendCSaveGameMsg)0x40639b,
+
     },
     // Gog
     Api{
         (Api::CheckObjectLock)0x40753e,
         (Api::SendStackMoveMsg)0x40619b,
+        (Api::SendCSaveGameMsg)0x40639b,
+
     },
     // Scenario Editor
     Api{
         (Api::CheckObjectLock)nullptr,
         (Api::SendStackMoveMsg)nullptr,
+        (Api::SendCSaveGameMsg)nullptr,
     },
 }};
 // clang-format on

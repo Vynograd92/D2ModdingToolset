@@ -97,6 +97,7 @@ bool __stdcall getPossibleNobleActionsHooked(const game::IMidgardObjectMap* obje
                                              const game::CMidgardID* objectId,
                                              game::Set<game::LNobleActionCat>* nobleActions)
 {
+    return true;
     using namespace game;
 
     const auto& customSites{customSiteCategories()};
