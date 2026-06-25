@@ -91,8 +91,8 @@ settings = {
 	},
 	
 	-- Configurable hotkeys for the strategic map interface. 
-	-- Defaults: ctrl/shift/alt is false,
-	-- openSelectedObject = "I"	
+	-- Defaults:
+	-- openSelectedObject = "I"	 inventory
 	-- quickSave = ctrl + "Q"	
 	hotkeys = {
 

@@ -586,7 +586,7 @@ static std::array<Functions, 4> functions = {{
         (FindCapitalByPlayerId)nullptr,
         (StratInterfKeyHandler)nullptr,
         (StratInterfSendSaveGameMsgToServer)nullptr,
-        (StratInterfOpenSelectedObject)0x490C28,
+        (StratInterfOpenSelectedObject)nullptr,
         (MidServerLogicDataBeginTurn)nullptr,
     },
 }};
