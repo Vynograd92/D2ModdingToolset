@@ -658,23 +658,27 @@ void __fastcall CMenuCustomLobby::joinBtnHandler(CMenuCustomLobby* thisptr, int 
     }
 
     if (room->usedSlots >= room->totalSlots) {
-        // Could not join game. Host did not report any available race.
         showMessageBox(getInterfaceText("X005TA0886"));
         return;
     }
 
     // Show wait dialog right away because game files hashing can be lengthy
     thisptr->showWaitDialog();
+
     const auto& gameFilesHash = CNetCustomService::get()->getGameFilesHash();
     if (room->gameFilesHash != gameFilesHash) {
-        auto message{getInterfaceText(textIds().lobby.checkFilesFailed.c_str())};
+        auto message = getInterfaceText(textIds().lobby.checkFilesFailed.c_str());
         if (message.empty()) {
             message =
                 "Unable to join the room because the owner's game version or files are different.";
         }
+
         thisptr->hideWaitDialog();
         showMessageBox(message);
-    } else if (!room->templateHash.empty()) {
+        return;
+    }
+
+    if (!room->templateHash.empty()) {
         auto templatePath = templatesFolder() / room->templateName;
 
         if (!std::filesystem::exists(templatePath)) {
@@ -696,15 +700,18 @@ void __fastcall CMenuCustomLobby::joinBtnHandler(CMenuCustomLobby* thisptr, int 
 
             return;
         }
-    } else if (!room->password.empty()) {
+    }
+
+    if (!room->password.empty()) {
         // Store selected room info because the room list can be updated while the dialog is shown
         thisptr->m_joiningRoomId = room->id;
         thisptr->m_joiningRoomPassword = room->password;
         thisptr->hideWaitDialog();
         thisptr->showRoomPasswordDialog();
-    } else {
-        CNetCustomService::get()->joinRoom(room->id);
+        return;
     }
+
+    CNetCustomService::get()->joinRoom(room->id);
 }
 
 void __fastcall CMenuCustomLobby::backBtnHandler(CMenuCustomLobby* thisptr, int /*%edx*/)
