@@ -160,6 +160,7 @@ call ..\buildDetours.bat ..\Detours
     <ClCompile Include="src\bindings\globalspellsview.cpp" />
     <ClCompile Include="src\bindings\spellview.cpp" />
     <ClCompile Include="src\bindings\usersettingsview.cpp" />
+    <ClCompile Include="src\rodinlinehook.cpp" />
     <ClCompile Include="src\stealmerchantiteminterf.cpp" />
     <ClCompile Include="src\stealitemhooks.cpp" />
     <ClCompile Include="src\addstealspellhooks.cpp" />
@@ -711,6 +712,7 @@ call ..\buildDetours.bat ..\Detours
     <ClInclude Include="include\bindings\globalspellsview.h" />
     <ClInclude Include="include\bindings\spellview.h" />
     <ClInclude Include="include\bindings\usersettingsview.h" />
+    <ClInclude Include="include\rodinlinehook.h" />
     <ClInclude Include="include\stealmerchantiteminterf.h" />
     <ClInclude Include="include\stealitemhooks.h" />
     <ClInclude Include="include\addstealspellhooks.h" />

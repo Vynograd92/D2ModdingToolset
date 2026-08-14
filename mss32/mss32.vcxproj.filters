@@ -1623,6 +1623,9 @@
     <ClCompile Include="src\bindings\usersettingsview.cpp">
       <Filter>bindings</Filter>
     </ClCompile>
+    <ClCompile Include="src\rodinlinehook.cpp">
+      <Filter>game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\aipriority.h">
@@ -4023,6 +4026,9 @@
     <ClInclude Include="include\usersettings.h" />
     <ClInclude Include="include\bindings\usersettingsview.h">
       <Filter>bindings</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rodinlinehook.h">
+      <Filter>game</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

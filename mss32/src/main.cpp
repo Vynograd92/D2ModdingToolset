@@ -36,6 +36,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <detours.h>
+#include <rodinlinehook.h>
 
 HMODULE library{};
 static HMODULE libraryMss23{};
@@ -149,6 +150,7 @@ static bool setupHook(hooks::HookInfo& hook)
 
 static bool setupHooks()
 {
+    hooks::installRodInlineHook();
     auto hooks{hooks::getHooks()};
 
     DetourTransactionBegin();
@@ -170,6 +172,7 @@ static bool setupHooks()
     spdlog::debug("All hooks are set");
     return true;
 }
+
 
 static void setupVftableHooks()
 {
